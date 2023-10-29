@@ -18,3 +18,5 @@ paragraph
 <<< cool/footer.md
 
 <<< Brown.png
+
+[to Folder 1](/folder/index.md)

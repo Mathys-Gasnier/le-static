@@ -72,7 +72,7 @@ export class Builder {
       return [ false, false, name, `<img alt="${name}" src="/resources/${path}" class="image image-${name}" />` ];
     }
 
-    return [ true, false, '', `<error>Cannot find ${path}</error>`];
+    return [ true, false, '', `<error>Import of "${extention}" files not supported</error>`];
   }
 
   public buildFolder(folder: Folder): Folder {
@@ -100,7 +100,7 @@ export class Builder {
       if(statement.type === Statements.Header) {
         fileOutput += `<h${statement.level} class="header h-${statement.level}">${statement.text}</h${statement.level}>\n`;
       }else if(statement.type === Statements.Paragraph) {
-        fileOutput += `<p class="paragraph">${statement.lines.join('\n')}</p>\n`;
+        fileOutput += `<p class="paragraph">${this.buildLinks(statement.lines.join('\n'))}</p>\n`;
       }else if(statement.type === Statements.Separator) {
         fileOutput += `<span class="separator"></span>\n`;
       }else if(statement.type === Statements.Import) {
@@ -150,6 +150,12 @@ export class Builder {
 
       writeFileSync(`${path}/${file.name}.${file.extention}`, mapFunction(file));
     }
+  }
+
+  public buildLinks(input: string): string {
+    return input.replace(/\[(.*)\]\((.*?)(.md)?\)/gm, (str, p1, p2, p3) => {
+      return `<a href="${p2}${p3 ? '.html' : ''}">${p1}</a>`;
+    });
   }
 
 }
