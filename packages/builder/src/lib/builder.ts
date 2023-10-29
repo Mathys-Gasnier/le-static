@@ -40,8 +40,6 @@ export class Builder {
 
     const pages = this.buildFolder(this.project.pages);
 
-    console.log(pages);
-
     this.createFolder(pages, `${distPath}`, (file) => this.wrapHtml(file.name, file.content));
     this.createFolder(this.project.styles, `${distPath}/styles`);
     this.createFolder(this.project.resources, `${distPath}/resources`);

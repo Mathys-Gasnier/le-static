@@ -15,8 +15,10 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
+      "builder": ["packages/builder/src/index.ts"],
       "loader": ["packages/loader/src/index.ts"],
-      "markdown-parser": ["packages/markdown-parser/src/index.ts"]
+      "markdown-parser": ["packages/markdown-parser/src/index.ts"],
+      "server": ["packages/server/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]
