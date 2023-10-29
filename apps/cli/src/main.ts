@@ -13,6 +13,11 @@ program
 
     const project = load(path);
 
+    if(!project) {
+      console.log('Cannot find project, are you missing config file .le-static.json');
+      return;
+    }
+
     build(project);
 
     console.log(`Build Successfull`);
@@ -27,6 +32,11 @@ program
 
         const project = load(path);
 
+        if(!project) {
+          console.log('Cannot find project, are you missing config file .le-static.json');
+          return;
+        }
+
         build(project);
         
         console.log(`Build Successfull`);
@@ -34,7 +44,7 @@ program
 
         startServer(`${path}/dist`, {
           port: options.port
-        }, project.config);
+        }, project);
     });
 
 program.parse();

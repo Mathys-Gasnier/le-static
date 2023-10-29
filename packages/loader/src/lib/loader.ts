@@ -23,7 +23,9 @@ export interface Project {
   config: Config
 }
 
-export function load(src: string): Project {
+export function load(src: string): Project | null {
+
+  if(!existsSync(`${src}/.le-static.json`)) return null;
 
   const project: Project = {
     src,
@@ -42,9 +44,12 @@ function loadFolder(src: string): Folder {
 
   if(!existsSync(src)) return folder;
 
+  // Loops over all files and folder in src
   for(const file of readdirSync(src, { withFileTypes: true })) {
+    // If it is a directory, recurse
     if(file.isDirectory()) folder.files[file.name] = loadFolder(`${src}/${file.name}`);
     else {
+      // Else get the name, extension and content of the file and add them to the folder
       const name = file.name.split('.').slice(0, -1).join('.');
       const extention = file.name.split('.').slice(-1).join('');
       const content = readFileSync(`${src}/${file.name}`);
@@ -66,14 +71,14 @@ export interface Config {
     port?: string | number
   },
   site?: {
-    title?: string,
+    title?: string, // %page_name% is replaced with the name of the current page
     favicon?: string
   },
   build?: {
     outDir?: string,
     components?: {
-      prefix?: string,
-      suffix?: string
+      prefix?: string, // Component added before each page content
+      suffix?: string  // Component added after each page content
     }
   }
 }
