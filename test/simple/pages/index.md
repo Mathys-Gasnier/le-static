@@ -16,3 +16,5 @@ another
 paragraph
 
 <<< cool/footer.md
+
+<<< Brown.png

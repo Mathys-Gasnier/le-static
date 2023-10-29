@@ -4,7 +4,7 @@ export interface File {
   type: 'file',
   name: string,
   extention: string,
-  content: string
+  content: string | Buffer
 }
 
 export interface Folder {
@@ -18,7 +18,8 @@ export interface Project {
   pages: Folder,
   components: Folder,
   resources: Folder,
-  styles: Folder
+  styles: Folder,
+  config: Config
 }
 
 export function load(src: string): Project {
@@ -27,7 +28,8 @@ export function load(src: string): Project {
     pages: loadFolder(`${src}/pages`),
     components: loadFolder(`${src}/components`),
     resources: loadFolder(`${src}/resources`),
-    styles: loadFolder(`${src}/styles`)
+    styles: loadFolder(`${src}/styles`),
+    config: loadConfig(src)
   }
 
   return project;
@@ -49,10 +51,22 @@ function loadFolder(src: string): Folder {
         type: 'file',
         name: name,
         extention: extention,
-        content: content.toString()
+        content: content
       }
     }
   }
 
   return folder;
+}
+
+export interface Config {
+  serverPort?: string | number,
+  outDir?: string
+}
+
+function loadConfig(src: string): Config {
+  const configPath = `${src}/.le-static.json`;
+  if(!existsSync(configPath)) return { };
+  const configContent = readFileSync(configPath);
+  return JSON.parse(configContent.toString());
 }

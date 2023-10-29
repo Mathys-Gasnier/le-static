@@ -1,11 +1,17 @@
 import express from 'express';
+import { Config } from 'loader';
 
-export function startServer(path: string) {
+export interface ServerOptions {
+  port: string | number
+}
+
+export function startServer(path: string, options: ServerOptions, config: Config) {
+  const port = options.port ?? config.serverPort ?? 8080;
   const app = express();
   
   app.use(express.static(path));
 
-  app.listen(8080, () => {
-    console.log(`Server listening on ${8080}`);
+  app.listen(port, () => {
+    console.log(`Server listening on ${port}`);
   });
 }

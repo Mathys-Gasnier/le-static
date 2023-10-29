@@ -1,5 +1,5 @@
 import { Statements, parse } from 'markdown-parser';
-import { File, Folder, Project, load } from 'loader';
+import { Config, File, Folder, Project, load } from 'loader';
 import { existsSync, mkdirSync, rmSync, writeFileSync,  } from 'fs';
 
 export interface BuiltFile {
@@ -15,34 +15,35 @@ export interface BuiltFolder {
   }
 }
 
-export function build(src: string) {
+export function build(src: string, config?: Config): Builder {
 
-  new Builder(src);
-
-  return;
+  return new Builder(src, config);
 }
 
-const extentionMap = {
+type ProjectFolder = 'styles' | 'components' | 'resources';
+
+const extentionMap: Record<string, ProjectFolder> = {
   'css': 'styles',
-  'md': 'components'
+  'md': 'components',
+  'png': 'resources'
 };
 
 export class Builder {
 
   public project: Project;
 
-  constructor(public src: string) {
+  constructor(public src: string, public configOverwrites?: Config) {
     this.project = load(src);
 
-    const distPath = `${src}/dist`;
+    const distPath = `${src}/${this.configOverwrites?.outDir ?? this.project.config.outDir ?? 'dist'}`;
 
     if(existsSync(distPath)) rmSync(distPath, { recursive: true, force: true });
 
     const pages = this.buildFolder(this.project.pages);
 
-    this.createFolder(pages, `${distPath}`, (file) => this.wrapHtml(file.name, file.content));
+    this.createFolder(pages, `${distPath}`, (file) => this.wrapHtml(file.name, file.content.toString()));
     this.createFolder(this.project.styles, `${distPath}/styles`);
-    this.createFolder(this.project.resources, `${distPath}/resources`);
+    this.createFolder(this.project.resources, `${distPath}/resources`, (file) => file.content);
   }
 
   public resolveImport(path: string): [ boolean, boolean, string, string ] {
@@ -52,7 +53,7 @@ export class Builder {
     const name = file.slice(0, -1).join('.');
     const extention = file[file.length - 1];
 
-    let projectFile: File | Folder = this.project[extentionMap[extention as keyof typeof extentionMap] as 'styles' | 'components'];
+    let projectFile: File | Folder = this.project[extentionMap[extention as keyof typeof extentionMap] as ProjectFolder];
     for(const section of sections) {
       if(!projectFile) return [ true, false, '', `<error>Cannot find ${path}</error>`];
       if(projectFile.type === 'file') break;
@@ -66,7 +67,7 @@ export class Builder {
       return [ false, false, name, `<link rel="stylesheet" href="/styles/${path}" />` ];
     }else if(extention === 'md') {
       const builtFile = this.buildFile(projectFile);
-      return [ false, true, name, builtFile.content ];
+      return [ false, true, name, builtFile.content.toString() ];
     }else if(extention === 'png') {
       return [ false, false, name, `<img alt="${name}" src="/resources/${path}" class="image image-${name}" />` ];
     }
@@ -91,7 +92,7 @@ export class Builder {
   }
   
   public buildFile(file: File): File {
-    const parsedFile = parse(file.content);
+    const parsedFile = parse(file.content.toString());
   
     let fileOutput = '';
   
@@ -128,7 +129,7 @@ export class Builder {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${pageName}</title>
-  <link rel="stylesheet" href="index.css" />
+  <link rel="stylesheet" href="styles/index.css" />
 </head>
 <body>
   ${content}
@@ -137,7 +138,7 @@ export class Builder {
     `;
   }
 
-  public createFolder(folder: Folder, path: string, mapFunction: (file: File) => string = (file) => file.content) {
+  public createFolder(folder: Folder, path: string, mapFunction: (file: File) => string | Buffer = (file) => file.content) {
     mkdirSync(path, { recursive: true });
 
     for(const fileName in folder.files) {
