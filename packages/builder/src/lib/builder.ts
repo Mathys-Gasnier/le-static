@@ -1,5 +1,5 @@
 import { Statements, parse } from 'markdown-parser';
-import { Config, File, Folder, Project, load } from 'loader';
+import { File, Folder, Project } from 'loader';
 import { existsSync, mkdirSync, rmSync, writeFileSync,  } from 'fs';
 
 export interface BuiltFile {
@@ -15,9 +15,8 @@ export interface BuiltFolder {
   }
 }
 
-export function build(src: string, config?: Config): Builder {
-
-  return new Builder(src, config);
+export function build(project: Project): Builder {
+  return new Builder(project);
 }
 
 type ProjectFolder = 'styles' | 'components' | 'resources';
@@ -30,12 +29,11 @@ const extentionMap: Record<string, ProjectFolder> = {
 
 export class Builder {
 
-  public project: Project;
+  public componentCache: Record<string, string> = {};
 
-  constructor(public src: string, public configOverwrites?: Config) {
-    this.project = load(src);
+  constructor(public project: Project) {
 
-    const distPath = `${src}/${this.configOverwrites?.outDir ?? this.project.config.outDir ?? 'dist'}`;
+    const distPath = `${this.project.src}/${this.project.config.build?.outDir ?? 'dist'}`;
 
     if(existsSync(distPath)) rmSync(distPath, { recursive: true, force: true });
 
@@ -53,6 +51,8 @@ export class Builder {
     const name = file.slice(0, -1).join('.');
     const extention = file[file.length - 1];
 
+    if(this.componentCache[path]) return [ false, true, name, this.componentCache[path] ];
+
     let projectFile: File | Folder = this.project[extentionMap[extention as keyof typeof extentionMap] as ProjectFolder];
     for(const section of sections) {
       if(!projectFile) return [ true, false, '', `<error>Cannot find ${path}</error>`];
@@ -67,9 +67,8 @@ export class Builder {
       return [ false, false, name, `<link rel="stylesheet" href="/styles/${path}" />` ];
     }else if(extention === 'md') {
       const builtFile = this.buildFile(projectFile);
+      this.componentCache[path] = builtFile.content.toString();
       return [ false, true, name, builtFile.content.toString() ];
-    }else if(extention === 'png') {
-      return [ false, false, name, `<img alt="${name}" src="/resources/${path}" class="image image-${name}" />` ];
     }
 
     return [ true, false, '', `<error>Import of "${extention}" files not supported</error>`];
@@ -100,7 +99,7 @@ export class Builder {
       if(statement.type === Statements.Header) {
         fileOutput += `<h${statement.level} class="header h-${statement.level}">${statement.text}</h${statement.level}>\n`;
       }else if(statement.type === Statements.Paragraph) {
-        fileOutput += `<p class="paragraph">${this.buildLinks(statement.lines.join('\n'))}</p>\n`;
+        fileOutput += `<p class="paragraph">${this.buildStrings(statement.lines.join('\n'))}</p>\n`;
       }else if(statement.type === Statements.Separator) {
         fileOutput += `<span class="separator"></span>\n`;
       }else if(statement.type === Statements.Import) {
@@ -110,6 +109,12 @@ export class Builder {
           continue;
         }
         fileOutput += `<div class="component component-${name}">\n${content}\n</div>\n`;
+      }else if(statement.type === Statements.UnorderedList) {
+        fileOutput += `<ul class="ul">${statement.lines.map((str) => `<li class="li">${this.buildStrings(str)}</li>`).join('')}</ul>`;
+      }else if(statement.type === Statements.OrderedList) {
+        fileOutput += `<ol class="ol">${statement.lines.map((str) => `<li class="li">${this.buildStrings(str)}</li>`).join('')}</ol>`;
+      }else if(statement.type === Statements.BlockQuotes) {
+        fileOutput += `<p class="block-quotes">${this.buildStrings(statement.lines.join('\n'))}</p>`;
       }
     }
   
@@ -128,11 +133,14 @@ export class Builder {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${pageName}</title>
+  <title>${(this.project.config.site?.title ?? '%page_name%').replace(/%page_name%/gm, pageName)}</title>
+  ${this.project.config.site?.favicon ? `<link rel="icon" type="image/x-icon" href="${this.project.config.site.favicon}">` : ''}
   <link rel="stylesheet" href="styles/index.css" />
 </head>
 <body>
+  ${this.project.config.build?.components?.prefix ? this.resolveImport(this.project.config.build?.components?.prefix)[3] : ''}
   ${content}
+  ${this.project.config.build?.components?.suffix ? this.resolveImport(this.project.config.build?.components?.suffix)[3] : ''}
 </body>
 </html>
     `;
@@ -144,7 +152,7 @@ export class Builder {
     for(const fileName in folder.files) {
       const file = folder.files[fileName];
       if(file.type === 'folder') {
-        this.createFolder(file, `${path}/${fileName}`);
+        this.createFolder(file, `${path}/${fileName}`, mapFunction);
         continue;
       }
 
@@ -152,10 +160,17 @@ export class Builder {
     }
   }
 
-  public buildLinks(input: string): string {
-    return input.replace(/\[(.*)\]\((.*?)(.md)?\)/gm, (str, p1, p2, p3) => {
-      return `<a href="${p2}${p3 ? '.html' : ''}">${p1}</a>`;
-    });
+  public buildStrings(input: string): string {
+    return input
+      .replace(/(?<!!)\[(.*)\]\((.*?)(.md)?\)/gm, (str, p1, p2, p3) => {
+        return `<a href="${p2}${p3 ? '.html' : ''}">${p1}</a>`;
+      })
+      .replace(/!\[(.*)\]\((.*?)?\)/gm, (str, p1, p2) => {
+        return `<img alt="${p1}" src="/resources/${p2}" class="image image-${p1}" />`;
+      })
+      .replace(/\*\*(.*?)\*\*/gm, '<b>$1</b>')
+      .replace(/\*(.*?)\*/gm, '<i>$1</i>')
+      .replace(/`(.*?)`/gm, '<code>$1</code>');
   }
 
 }

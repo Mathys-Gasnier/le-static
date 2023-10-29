@@ -3,7 +3,10 @@ export enum Statements {
   Paragraph,
   Header,
   Separator,
-  Import
+  Import,
+  UnorderedList,
+  OrderedList,
+  BlockQuotes
 }
 
 export type Statement = (
@@ -22,6 +25,18 @@ export type Statement = (
   {
     type: Statements.Import,
     name: string
+  } |
+  {
+    type: Statements.UnorderedList,
+    lines: string[]
+  } |
+  {
+    type: Statements.OrderedList,
+    lines: string[]
+  } |
+  {
+    type: Statements.BlockQuotes,
+    lines: string[]
   }
 );
 
@@ -32,6 +47,7 @@ export function parse(input: string): Document {
 
   const lines = input.split(/\r?\n/g);
 
+  let accType = Statements.Paragraph;
   let acc: string[] = [];
 
   function push(statement: Statement) {
@@ -47,6 +63,48 @@ export function parse(input: string): Document {
     const isHeader = line.trimStart().match(/^(#+)\s*/);
     const isSeparator = line.trim() === '---';
     const isImport = line.trimStart().match(/^<<<\s*/);
+    const isUnorderedList = line.trimStart().match(/^[-*+]\s*/);
+    const isOrderedList = line.trimStart().match(/^[0-9]+\.\s*/);
+    const isBlockQuote = line.trimStart().match(/^>\s*/);
+
+    if(isUnorderedList && !isSeparator) {
+      if(accType !== Statements.UnorderedList) push({ type: accType, lines: acc });
+
+      accType = Statements.UnorderedList;
+      acc.push(line.substring(isUnorderedList[0].length));
+      continue;
+    }
+    if(accType === Statements.UnorderedList) {
+      accType = Statements.Paragraph;
+      push({ type: Statements.UnorderedList, lines: acc });
+      acc = [];
+    }
+
+    if(isOrderedList) {
+      if(accType !== Statements.OrderedList) push({ type: accType, lines: acc });
+
+      accType = Statements.OrderedList;
+      acc.push(line.substring(isOrderedList[0].length));
+      continue;
+    }
+    if(accType === Statements.OrderedList) {
+      accType = Statements.Paragraph;
+      push({ type: Statements.OrderedList, lines: acc });
+      acc = [];
+    }
+
+    if(isBlockQuote) {
+      if(accType !== Statements.BlockQuotes) push({ type: accType, lines: acc });
+
+      accType = Statements.BlockQuotes;
+      acc.push(line.substring(isBlockQuote[0].length));
+      continue;
+    }
+    if(accType === Statements.BlockQuotes) {
+      accType = Statements.Paragraph;
+      push({ type: Statements.BlockQuotes, lines: acc });
+      acc = [];
+    }
     
     if(isEmpty) {
       push({ type: Statements.Paragraph, lines: acc });

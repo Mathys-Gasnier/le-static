@@ -1,4 +1,14 @@
 {
-    "serverPort": 5454,
-    "outDir": "dist"
+    "server": {
+        "port": 5454
+    },
+    "site": {
+        "title": "Demo - %page_name%"
+    },
+    "build": {
+        "outDir": "dist",
+        "components": {
+            "suffix": "cool/footer.md"
+        }
+    }
 }

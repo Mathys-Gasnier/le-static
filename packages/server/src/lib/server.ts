@@ -6,7 +6,7 @@ export interface ServerOptions {
 }
 
 export function startServer(path: string, options: ServerOptions, config: Config) {
-  const port = options.port ?? config.serverPort ?? 8080;
+  const port = options.port ?? config.server?.port ?? 8080;
   const app = express();
   
   app.use(express.static(path));

@@ -15,6 +15,7 @@ export interface Folder {
 }
 
 export interface Project {
+  src: string,
   pages: Folder,
   components: Folder,
   resources: Folder,
@@ -25,6 +26,7 @@ export interface Project {
 export function load(src: string): Project {
 
   const project: Project = {
+    src,
     pages: loadFolder(`${src}/pages`),
     components: loadFolder(`${src}/components`),
     resources: loadFolder(`${src}/resources`),
@@ -60,8 +62,20 @@ function loadFolder(src: string): Folder {
 }
 
 export interface Config {
-  serverPort?: string | number,
-  outDir?: string
+  server?: {
+    port?: string | number
+  },
+  site?: {
+    title?: string,
+    favicon?: string
+  },
+  build?: {
+    outDir?: string,
+    components?: {
+      prefix?: string,
+      suffix?: string
+    }
+  }
 }
 
 function loadConfig(src: string): Config {
