@@ -1,7 +1,7 @@
 import { Document, Statements, parse } from './markdown-parser';
 
 describe('markdownParser', () => {
-  it('should work', () => {
+  it('Should properly parse basic markdown', () => {
     expect(parse(`<<< file.css
 # Title
 

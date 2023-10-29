@@ -1,13 +1,17 @@
 import { existsSync, readFileSync, readdirSync } from 'fs';
 
 export interface File {
+  type: 'file',
   name: string,
   extention: string,
   content: string
 }
 
-interface Folder {
-  [key: string]: File | Folder
+export interface Folder {
+  type: 'folder',
+  files: {
+    [key: string]: File | Folder
+  }
 }
 
 export interface Project {
@@ -30,18 +34,19 @@ export function load(src: string): Project {
 }
 
 function loadFolder(src: string): Folder {
-  const folder: Folder = {};
+  const folder: Folder = { type: 'folder', files: { } };
 
   if(!existsSync(src)) return folder;
 
   for(const file of readdirSync(src, { withFileTypes: true })) {
-    if(file.isDirectory()) folder[file.name] = loadFolder(`${src}/${file.name}`);
+    if(file.isDirectory()) folder.files[file.name] = loadFolder(`${src}/${file.name}`);
     else {
       const name = file.name.split('.').slice(0, -1).join('.');
       const extention = file.name.split('.').slice(-1).join('');
       const content = readFileSync(`${src}/${file.name}`);
 
-      folder[file.name] = {
+      folder.files[file.name] = {
+        type: 'file',
         name: name,
         extention: extention,
         content: content.toString()

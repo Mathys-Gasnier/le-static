@@ -1,7 +1,7 @@
 import { load } from './loader';
 
 describe('loader', () => {
-  it('should work', () => {
+  it('Should properly load project folders', () => {
     expect(load('C:\\Users\\matbo\\Documents\\le-static\\test\\simple')).toEqual({
       pages: {
         'index.md': {
