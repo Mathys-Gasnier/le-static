@@ -1,161 +1,220 @@
 
-export enum Statements {
-  Paragraph, // Normal paragraph separated by other Statements or blank lines
-  Header, // Header line (one or multiple # to define level)
-  Separator, // An horizontal line/separator
-  Import, // Import styles and components
+export enum LineType {
+  Blank,
+  Paragraph,
+  Separator,
+  Header,
+  CodeBlock,
+  Import,
   UnorderedList,
   OrderedList,
-  BlockQuotes // Paragraph preceded with >
+  BlockQuotes
 }
 
-export type Statement = (
+export type LexedLine = {
+  type: LineType,
+  tokens: string[]
+};
+
+export type Line = (
   {
-    type: Statements.Paragraph,
+    type: LineType.Separator
+  } |
+  {
+    type: LineType.Paragraph | LineType.UnorderedList | LineType.OrderedList | LineType.BlockQuotes,
     lines: string[]
   } |
   {
-    type: Statements.Header,
-    level: number, // # = 1, ## = 2, ...
-    text: string
+    type: LineType.Header,
+    level: number, text: string
   } |
   {
-    type: Statements.Separator
-  } |
-  {
-    type: Statements.Import,
-    name: string // name/path of the imported thing
-  } |
-  {
-    type: Statements.UnorderedList,
+    type: LineType.CodeBlock,
+    language: string,
     lines: string[]
-  } |
-  {
-    type: Statements.OrderedList,
-    lines: string[]
-  } |
-  {
-    type: Statements.BlockQuotes,
-    lines: string[]
+  } | {
+    type: LineType.Import,
+    file: string
   }
 );
 
-export type Document = Statement[];
+export type Document = Line[];
 
-export function parse(input: string): Document {
-  const document: Document = [];
+export interface Head {
+  title?: string,
+  css?: string[]
+}
 
-  const lines = input.split(/\r?\n/g);
+export function parseHead(inputLines: string[]): [ Head, string[] ] {
+  const head: Head = {};
 
-  // The current accumulating statement (used for statements that accumulate lines)
-  let accType = Statements.Paragraph;
-  // Line accumulator
-  let acc: string[] = [];
+  const rest = [ ...inputLines ];
 
-  function push(statement: Statement) {
-    // If the pushed statement is a paragraph, check if the accumulator is not empty, if not reset it
-    if(statement.type === Statements.Paragraph) {
-      if(acc.length === 0) return;
-      acc = []; 
+  for(const line of inputLines) {
+    const trimmed = line.trim();
+
+    const isUseStatement = trimmed.match(/^@use\s+/);
+    if(isUseStatement) {
+      head.css = [
+        ...(head.css ?? []),
+        trimmed.substring(isUseStatement[0].length)
+      ];
+      rest.shift();
+      continue;
     }
-    document.push(statement);
+
+    const isTitle = trimmed.match(/^@\s+/);
+    if(isTitle) {
+      if(head.title) throw new Error('Page title cannot be set twice !');
+      head.title = trimmed.substring(isTitle[0].length)
+      rest.shift();
+      continue;
+    }
+
+    break;
   }
+
+  return [
+    head, rest
+  ];
+}
+
+export function parse(input: string): [ Head, Document ] {
+  let inputLines = input.split(/\r?\n/g);
+
+  const parsedHead = parseHead(inputLines);
+  const head = parsedHead[0];
+
+  inputLines = parsedHead[1];
+
+  const lines: LexedLine[] = [];
+  let inCodeBlock = false;
+
+  for(const line of inputLines) {
+
+    const trimmed = line.trim();
+    
+    if(inCodeBlock) {
+
+      if(trimmed === '```') {
+        inCodeBlock = false;
+        lines.push({ type: LineType.CodeBlock, tokens: [ '```' ] });
+        continue;
+      }
+
+      lines.push({ type: LineType.CodeBlock, tokens: [ line ] });
+      continue;
+    }
+
+    if(trimmed === '') {
+      lines.push({ type: LineType.Blank, tokens: [] });
+      continue;
+    }
+
+    if(trimmed === '---') {
+      lines.push({ type: LineType.Separator, tokens: [ '---' ] });
+      continue;
+    }
+
+    if(trimmed.startsWith('```')) {
+      lines.push({ type: LineType.CodeBlock, tokens: [ '```', line.split('```')[1] ] });
+      inCodeBlock = true;
+      continue;
+    }
+
+    const isHeader = trimmed.match(/^(#+)\s*/);
+    if(isHeader) {
+      lines.push({
+        type: LineType.Header,
+        tokens: [
+          isHeader[1],
+          trimmed.substring(isHeader[0].length)
+        ]
+      });
+      continue;
+    }
+
+    const isImport = trimmed.match(/^@import\s+/);
+    if(isImport) {
+      lines.push({
+        type: LineType.Import,
+        tokens: [ trimmed.substring(isImport[0].length) ]
+      });
+      continue;
+    }
+
+    const isUnorderedList = trimmed.match(/^[-+*]\s*/);
+    if(isUnorderedList) {
+      lines.push({
+        type: LineType.UnorderedList,
+        tokens: [ trimmed.substring(isUnorderedList[0].length) ]
+      });
+      continue;
+    }
+
+    const isOrderedList = trimmed.match(/^[0-9]+\.\s*/);
+    if(isOrderedList) {
+      lines.push({
+        type: LineType.OrderedList,
+        tokens: [ trimmed.substring(isOrderedList[0].length) ]
+      });
+      continue;
+    }
+
+    const isBlockQuote = trimmed.match(/^>\s*/);
+    if(isBlockQuote) {
+      lines.push({
+        type: LineType.BlockQuotes,
+        tokens: [ trimmed.substring(isBlockQuote[0].length) ]
+      });
+      continue;
+    }
+
+    lines.push({ type: LineType.Paragraph, tokens: [ line.trimEnd() ] });
+  }
+
+  const document: Document = [];
+  const last = () => document[document.length - 1];
 
   for(const line of lines) {
-    // every condition for knowing the statement type
-    const isEmpty = line.trim() === ''; // Is the line a blank line ?
-    const isHeader = line.trimStart().match(/^(#+)\s*/); // Is the line a header line ? (starts with one or more #)
-    const isSeparator = line.trim() === '---'; // Is the line a separator ?
-    const isImport = line.trimStart().match(/^<<<\s*/); // Is the line an import statement ? (line starts with "<<<")
-    const isUnorderedList = line.trimStart().match(/^[-*+]\s*/); // Is the line an unordered list ? (line starts with one of -, * or +)
-    const isOrderedList = line.trimStart().match(/^[0-9]+\.\s*/); // Is the line an ordered list ? (line starts with a number followwed by a ".")
-    const isBlockQuote = line.trimStart().match(/^>\s*/); // Is the line a blockquote ? (line starts with a ">")
-
-    // We also check for the separator otherwise separator are understood as unordered lists
-    if(isUnorderedList && !isSeparator) {
-      // If we aren't accumulating a unordered list push the accumulator to the document and proceed
-      if(accType !== Statements.UnorderedList) push({ type: accType, lines: acc });
-
-      accType = Statements.UnorderedList;
-      acc.push(line.substring(isUnorderedList[0].length));
-      continue;
-    }
-    // If it's not an ordered list and we were accumulating one then reset the accumulator and push the unordered list
-    if(accType === Statements.UnorderedList) {
-      accType = Statements.Paragraph;
-      push({ type: Statements.UnorderedList, lines: acc });
-      acc = [];
-    }
-
-    // Same as unordered list
-    if(isOrderedList) {
-      if(accType !== Statements.OrderedList) push({ type: accType, lines: acc });
-
-      accType = Statements.OrderedList;
-      acc.push(line.substring(isOrderedList[0].length));
-      continue;
-    }
-    if(accType === Statements.OrderedList) {
-      accType = Statements.Paragraph;
-      push({ type: Statements.OrderedList, lines: acc });
-      acc = [];
-    }
-
-    // Same as unordered list
-    if(isBlockQuote) {
-      if(accType !== Statements.BlockQuotes) push({ type: accType, lines: acc });
-
-      accType = Statements.BlockQuotes;
-      acc.push(line.substring(isBlockQuote[0].length));
-      continue;
-    }
-    if(accType === Statements.BlockQuotes) {
-      accType = Statements.Paragraph;
-      push({ type: Statements.BlockQuotes, lines: acc });
-      acc = [];
-    }
-    
-    // If we encounter a blank line we try to push a paragraph (blank lines cut paragraphs)
-    if(isEmpty) {
-      push({ type: Statements.Paragraph, lines: acc });
-      continue;
-    }
-
-    if(isHeader) {
-      // Seen in every branch that continues the loop
-      // ensure that the accumulator for paragraph is handled when being "cut" by other statements
-      push({ type: Statements.Paragraph, lines: acc });
-
-      push({
-        type: Statements.Header,
-        level: isHeader[1].length,
-        text: line.substring(isHeader[0].length).trimEnd()
+    if(line.type === LineType.Separator) {
+      document.push({ type: line.type });
+    }else if(
+      line.type === LineType.Paragraph ||
+      line.type === LineType.UnorderedList ||
+      line.type === LineType.OrderedList ||
+      line.type === LineType.BlockQuotes
+    ) {
+      const lastLine = last();
+      if(!lastLine || lastLine.type !== line.type) {
+        document.push({ type: line.type, lines: [ line.tokens[0] ?? '' ] });
+      }else {
+        lastLine.lines.push(line.tokens[0] ?? '');
+      }
+    }else if(line.type === LineType.Header) {
+      document.push({
+        type: LineType.Header,
+        level: line.tokens[0].length,
+        text: line.tokens[1]
       });
-      continue;
-    }
-
-    if(isSeparator) {
-      push({ type: Statements.Paragraph, lines: acc });
-      push({ type: Statements.Separator });
-      continue;
-    }
-
-    if(isImport) {
-      push({ type: Statements.Paragraph, lines: acc });
-
-      push({
-        type: Statements.Import,
-        name: line.substring(isImport[0].length).trimEnd()
+    }else if(line.type === LineType.CodeBlock) {
+      const lastLine = last();
+      if(!lastLine || lastLine.type !== LineType.CodeBlock) {
+        document.push({
+          type: LineType.CodeBlock,
+          language: line.tokens[1],
+          lines: []
+        });
+      }else if(line.tokens[0] !== '```') {
+        lastLine.lines.push(line.tokens[0] ?? '');
+      }
+    }else if(line.type === LineType.Import) {
+      document.push({
+        type: line.type,
+        file: line.tokens[0]
       });
-      continue;
     }
-
-    // If it's just plain text we add it to the paragraph accumulator
-    acc.push(line.trimEnd());
   }
 
-  // Push the maybe existing accumulator
-  push({ type: accType, lines: acc });
-
-  return document;
+  return [ head, document ];
 }

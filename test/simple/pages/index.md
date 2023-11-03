@@ -1,4 +1,5 @@
-<<< file.css
+@ Main Page
+@use file.css
 
 # Main Title
 
@@ -28,7 +29,11 @@ different type of text:
 > stuff said by smart people
 > In those boxes
 
-<<< cool/footer.md
+```js
+console.log('test');
+```
+
+@import cool/footer.md
 
 ![Brown Square](Brown.png)
 

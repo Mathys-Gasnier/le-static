@@ -13,3 +13,8 @@ p {
 .block-quotes {
     margin-left: 3em;
 }
+
+.codeblock {
+    background-color: #cccccc;
+    padding: 1em;
+}
