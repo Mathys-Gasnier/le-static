@@ -1,4 +1,3 @@
-//import { Document, Statements, parse } from './markdown-parser';
 import { Document, LineType, parse } from './markdown-parser';
 
 describe('markdownParser', () => {

@@ -1,10 +1,10 @@
 {
-  "name": "builder",
+  "name": "@le-static/builder",
   "version": "0.0.1",
   "dependencies": {
     "tslib": "^2.3.0",
-    "loader": "*",
-    "markdown-parser": "*"
+    "@le-static/loader": "*",
+    "@le-static/markdown-parser": "*"
   },
   "type": "commonjs",
   "main": "./src/index.js",

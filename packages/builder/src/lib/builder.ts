@@ -1,5 +1,5 @@
-import { Head, LineType, parse } from 'markdown-parser';
-import { File, Folder, Project } from 'loader';
+import { Head, LineType, parse } from '@le-static/markdown-parser';
+import { File, Folder, Project } from '@le-static/loader';
 import { existsSync, mkdirSync, rmSync, writeFileSync,  } from 'fs';
 
 export function build(project: Project): Builder {

@@ -1,5 +1,5 @@
 import express from 'express';
-import { Project } from 'loader';
+import { Project } from '@le-static/loader';
 
 export interface ServerOptions {
   port: string | number

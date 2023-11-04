@@ -1,8 +1,10 @@
+#!/usr/bin/env node
+
 import { program } from 'commander';
 import { isAbsolute, resolve } from 'path';
-import { build } from 'builder';
-import { startServer } from 'server';
-import { Project, load } from 'loader';
+import { build } from '@le-static/builder';
+import { startServer } from '@le-static/server';
+import { Project, load } from '@le-static/loader';
 
 function buildProject(project_path?: string): Project {
       
