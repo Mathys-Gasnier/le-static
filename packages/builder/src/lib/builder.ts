@@ -106,11 +106,9 @@ export class Builder {
         fileOutput += `<ol class="ol">${ line.lines.map((str) => `<li class="li">${ this.buildStrings(str) }</li>`).join('') }</ol>`;
       }else if(line.type === LineType.BlockQuotes) {
         fileOutput += `<p class="block-quotes">${ this.buildStrings(line.lines.join('\n')) }</p>`;
-      }
-      else if(line.type === LineType.CodeBlock) {
+      }else if(line.type === LineType.CodeBlock) {
         fileOutput += `<pre class="codeblock"><code class="lang-${ line.language }">${ line.lines.join('\n') }</code></pre>`;
       }
-      // TODO: Add code block support
     }
   
     return {
@@ -122,6 +120,7 @@ export class Builder {
     };
   }
 
+  // Returns the component html structure with it's content, style links and title as a class
   public wrapComponent(component: Component): string {
     return `<div class="component component-${ component.head.title ?? component.name }">
       ${ (component.head.css ?? []).map((file) => `<link rel="stylesheet" href="/styles/${file}" />`).join('\n') }
@@ -129,6 +128,7 @@ export class Builder {
     </div>`;
   }
 
+  // Returns a page html structure with it's title, prefix, suffix, style links and content
   public wrapHtml(head: Head, content: string): string {
     const prefix = this.project.config.build?.components?.prefix ? this.resolveImport(this.project.config.build.components.prefix) : false;
     const suffix = this.project.config.build?.components?.suffix ? this.resolveImport(this.project.config.build.components.suffix) : false;

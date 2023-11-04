@@ -47,8 +47,7 @@ console.log('code block');
       css: [ 'test.css' ]
     });
 
-    expect(body)
-    .toEqual([
+    expect(body).toEqual([
       { type: LineType.Header, level: 1, text: "Title" },
       { type: LineType.Header, level: 2, text: "Sub Title" },
       { type: LineType.Header, level: 3, text: "SUB SUB Title" },
