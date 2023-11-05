@@ -17,6 +17,7 @@ The Document is a list of lines:
 - `UnorderedList` - A list of lines that start with eather `-`, `*` or `+`
 - `OrderedList` - A list of lines that start with a number followed by a `.`
 - `BlockQuotes` - Group of lines that starts with `>`
+- `Integration` - A block of js code that's executed on build
 
 ## Head Usage
 
@@ -107,9 +108,20 @@ Ordered lists are a grouping of multiple lines starting with a number suffixed b
 
 ### Block Quotes
 Block quotes are a grouping of multiple lines stating with `>`.
-> Returns the lsit of `lines` without the prefix.
+> Returns the list of `lines` without the prefix.
 
 ```md
 > This is the inside of a
 > Block Quote !
+```
+
+### Integration
+Integration are a block of js, it can be a function or anything else. \
+They are executed when the file is built, they can be used to generate content depending on the current state of the project.
+> Returns the `code` inside the block and if it's been `closed`
+
+```md
+$|
+() => 'This String will be put in place of this block'
+|$
 ```

@@ -8,7 +8,8 @@ export enum LineType {
   Import,
   UnorderedList,
   OrderedList,
-  BlockQuotes
+  BlockQuotes,
+  Integration
 }
 
 export type LexedLine = {
@@ -35,6 +36,10 @@ export type Line = (
   } | {
     type: LineType.Import,
     file: string
+  } | {
+    type: LineType.Integration,
+    code: string,
+    closed: boolean
   }
 );
 
@@ -93,10 +98,23 @@ export function parse(input: string): [ Head, Document ] {
 
   const lines: LexedLine[] = [];
   let inCodeBlock = false;
+  let inIntegration = false;
 
   for(const line of inputLines) {
 
     const trimmed = line.trim();
+
+    // If we are in an interaction we capture everything until the integration close tag
+    if(inIntegration) {
+      const end = line.indexOf('|$');
+      if(end !== -1) {
+        lines.push({ type: LineType.Integration, tokens: [ 'e', line.substring(0, end) ] });
+        inIntegration = false;
+        continue;
+      }
+      lines.push({ type: LineType.Integration, tokens: [ '', line ] });
+      continue;
+    }
     
     // If we are in a codeblock we simply capture lines as raw text, except if it's the code block ending
     if(inCodeBlock) {
@@ -193,6 +211,19 @@ export function parse(input: string): [ Head, Document ] {
       continue;
     }
 
+    /*
+    $| () => 'js function to insert this value' |$
+    */
+   const isIntegration = line.indexOf('$|');
+   if(isIntegration !== -1) {
+    const isEnding = line.indexOf('|$');
+
+    lines.push({ type: LineType.Integration, tokens: [ `s${isEnding === -1 ? '' : 'e'}`, line.substring(isIntegration + 2, isEnding === -1 ? undefined : isEnding) ] });
+
+    if(isEnding === -1) inIntegration = true;
+    continue;
+   }
+
     // If it's not any of the above line type, then it's a paragraph
     lines.push({ type: LineType.Paragraph, tokens: [ line.trimEnd() ] });
   }
@@ -239,6 +270,22 @@ export function parse(input: string): [ Head, Document ] {
         type: line.type,
         file: line.tokens[0]
       });
+    }else if(line.type === LineType.Integration) {
+      const lastLine = last();
+      if(
+        !lastLine || 
+        lastLine.type !== LineType.Integration ||
+        lastLine.closed
+      ) {
+        document.push({
+          type: LineType.Integration,
+          code: line.tokens[1],
+          closed: line.tokens[0].includes('e')
+        });
+      }else {
+        lastLine.closed = line.tokens[0].includes('e');
+        lastLine.code += line.tokens[1];
+      }
     }
   }
 

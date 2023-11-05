@@ -11,6 +11,12 @@ describe('markdownParser', () => {
 
 ### SUB SUB Title
 
+$| () => 'This value is inserted here' |$
+
+$| () => {
+  return 'This one too';
+} |$
+
 this
 is a 
 paragraph
@@ -50,6 +56,16 @@ console.log('code block');
       { type: LineType.Header, level: 1, text: "Title" },
       { type: LineType.Header, level: 2, text: "Sub Title" },
       { type: LineType.Header, level: 3, text: "SUB SUB Title" },
+      {
+        type: LineType.Integration,
+        code: " () => 'This value is inserted here' ",
+        closed: true
+      },
+      {
+        type: LineType.Integration,
+        code: " () => {  return 'This one too';} ",
+        closed: true
+      },
       {
         type: LineType.Paragraph,
         lines: [
