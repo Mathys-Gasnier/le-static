@@ -1,6 +1,8 @@
 @ Main Page
 @use file.css
 
+@import header.md
+
 # Main Title
 
 ## Sub Title
@@ -8,6 +10,8 @@
 ### SUB SUB Title
 
 $| () => 'This value is inserted here' |$
+
+$| Page.title |$
 
 $| () => {
   return 'This one too';
