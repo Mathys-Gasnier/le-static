@@ -2,7 +2,6 @@
   "name": "@le-static/cli",
   "version": "0.0.1",
   "dependencies": {
-    "commander": "^11.1.0",
     "@le-static/builder": "*",
     "@le-static/loader": "*",
     "@le-static/server": "*",
@@ -12,6 +11,6 @@
   "main": "./src/index.js",
   "typings": "./src/index.d.ts",
   "bin": {
-    "le-cli": "./bin/index.js"
+    "les": "./bin/index.js"
   }
 }
