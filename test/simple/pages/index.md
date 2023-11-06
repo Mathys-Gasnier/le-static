@@ -7,6 +7,12 @@
 
 ### SUB SUB Title
 
+$| () => 'This value is inserted here' |$
+
+$| () => {
+  return 'This one too';
+} |$
+
 this
 is a 
 paragraph
