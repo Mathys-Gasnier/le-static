@@ -12,6 +12,6 @@
   "main": "./src/index.js",
   "typings": "./src/index.d.ts",
   "bin": {
-    "les": "./bin/index.js"
+    "le-cli": "./bin/index.js"
   }
 }
