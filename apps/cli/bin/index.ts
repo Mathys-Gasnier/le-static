@@ -25,16 +25,31 @@ function buildProject(project_path?: string): Project {
   return project;
 }
 
+interface Option {
+  flags: string[],
+  value: boolean,
+  description: string,
+  valueName?: string
+}
 
 // Define the options of the cli
-const options = {
+const options: Record<string, Option> = {
   project: {
     flags: [ '-p', '--project' ],
-    value: true
+    value: true,
+    description: 'Specify the directory of the project to build',
+    valueName: '<PATH>'
   },
   serve: {
     flags: [ '-s', '--serve' ],
-    value: true
+    value: true,
+    description: 'Serve the built project on a given port',
+    valueName: '<PORT>'
+  },
+  help: {
+    flags: [ '-h', '--help' ],
+    value: false,
+    description: 'Display the help message'
   }
 };
 
@@ -66,10 +81,32 @@ while(idx < userArgs.length) {
   idx += config.value ? 2 : 1;
 }
 
+// If the help option is set display the help message
+if(userOptions.help) {
+
+  const opts = Object.values(options).map((option) => {
+    return [ `  ${option.flags.join(', ')} ${option.valueName ? `${option.valueName} ` : ''}`, option.description ];
+  });
+
+  const longest = opts.reduce((longest, [ current ]) => current.length > longest ? current.length : longest, 0);
+
+  console.log(`
+Usage: les [options]
+Options:
+${
+  opts.map(([ pre, description ]) => {
+    const padding = longest - pre.length;
+    return `${pre}${' '.repeat(padding)} ${description}`;
+  }).join('\n')
+}
+`);
+  process.exit(0);
+}
+
 const project = buildProject(userOptions.project.toString());
 
 // If the serve option is set, start the server on the given port
-if(project && options.serve) {
+if(project && userOptions.serve) {
   console.log(`Starting Server...`);
 
   startServer(`${project.src}/dist`, {

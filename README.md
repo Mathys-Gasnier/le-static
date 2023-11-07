@@ -10,7 +10,7 @@ A framework to create, generate and manage static markdown websites
 ```
 Usage: les [options]
 Options:
-  -p, --project <path>  Specify the directory of the project to build
+  -p, --project <PATH>  Specify the directory of the project to build
   -s, --serve <PORT>    Serve the built project on a given port
   -h, --help            display help for command
 ```

@@ -11,11 +11,11 @@
   },
   "targetDefaults": {
     "build": {
-      "cache": true,
+      "cache": false,
       "dependsOn": ["^build"]
     },
     "lint": {
-      "cache": true,
+      "cache": false,
       "inputs": [
         "default",
         "{workspaceRoot}/.eslintrc.json",
@@ -24,12 +24,12 @@
       ]
     },
     "test": {
-      "cache": true,
+      "cache": false,
       "dependsOn": ["build"],
       "inputs": ["default", "^default", "{workspaceRoot}/jest.preset.js"]
     },
     "e2e": {
-      "cache": true
+      "cache": false
     }
   },
   "nxCloudAccessToken": "ZTI1NTUxMDktODZlMi00N2MyLTljYjUtMjFkY2ZkZTdiNmU2fHJlYWQtd3JpdGU="
