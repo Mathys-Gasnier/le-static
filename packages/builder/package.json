@@ -1,6 +1,16 @@
 {
   "name": "@le-static/builder",
-  "version": "0.0.1",
+  "version": "1.0.0",
+  "license": "Apache-2.0",
+  "author": "Mathys Gasnier",
+  "homepage": "https://github.com/Mathys-Gasnier/le-static/tree/master/packages/builder",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mathys-Gasnier/le-static.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Mathys-Gasnier/le-static/issues"
+  },
   "dependencies": {
     "tslib": "^2.3.0",
     "@le-static/loader": "*",
