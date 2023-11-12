@@ -105,4 +105,24 @@ console.log('code block');
       }
     ] as Document);
   });
+
+  it('Should parse a page that is using template', () => {
+    const markdown = `@ Main Page
+@be template.md
+@define property value1
+@define thing thingy
+`;
+    const [ head, body ] = parse(markdown);
+
+    expect(head).toEqual({
+      title: 'Main Page',
+      template: 'template.md',
+      defines: {
+        'property': 'value1',
+        'thing': 'thingy'
+      }
+    });
+
+    expect(body).toEqual([ ] as Document);
+  });
 });

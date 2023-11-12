@@ -27,7 +27,19 @@ To set the page title you can use the following snyax, It cannot be used more th
 @ Page Title
 ```
 
-### Use statement
+### Be Statement
+To set the page template, It cannot be used more than once on a page.
+```
+@be path/to/template.md
+```
+
+### Define Statement
+A define statement can be used to set properties that are used by the template declared via the be statement.
+```
+@declare name some value
+```
+
+### Use Statement
 A use statement can be used to import style files into the page.
 ```
 @use path/to/file.css

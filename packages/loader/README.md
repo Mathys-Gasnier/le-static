@@ -36,6 +36,7 @@ A project is defined by the config file but also by a number of folders:
 - `components/` - It contains the components that you can import in the pages, you can import components in components.
 - `styles/` - It contains the styles that you can use across your pages and components.
 - `resources/` - It's the folder you use to store images and anything that doesn't fit in another folder.
+- `templates/` - It contains the templates that can be used in pages
 
 ## Folder
 

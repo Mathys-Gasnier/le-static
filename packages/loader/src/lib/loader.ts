@@ -24,6 +24,7 @@ export interface Project {
   components: Folder<File>,
   resources: Folder<File>,
   styles: Folder<File>,
+  templates: Folder<File>,
   config: Config
 }
 
@@ -37,6 +38,7 @@ export function load(src: string): Project | null {
     components: loadFolder(`${src}/components`, 'components'),
     resources: loadFolder(`${src}/resources`, 'resources'),
     styles: loadFolder(`${src}/styles`, 'styles'),
+    templates: loadFolder(`${src}/templates`, 'templates'),
     config: loadConfig(src)
   }
 

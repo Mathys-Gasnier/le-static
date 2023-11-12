@@ -47,7 +47,9 @@ export type Document = Line[];
 
 export interface Head {
   title?: string,
-  css?: string[]
+  template?: string,
+  css?: string[],
+  defines?: Record<string, string>
 }
 
 // While a line correspond to a Head element (title, css, etc) it's captured and removed from the lines returned
@@ -71,10 +73,28 @@ export function parseHead(inputLines: string[]): [ Head, string[] ] {
       continue;
     }
 
+    const isBeStatement = trimmed.match(/^@be\s+/);
+    if(isBeStatement) {
+      if(head.template) throw new Error('Page template cannot be set more than once !');
+      head.template = trimmed.substring(isBeStatement[0].length);
+      rest.shift();
+      continue;
+    }
+
+    const isDefineStatement = trimmed.match(/^@define\s+([a-zA-Z_-]+)\s+(.*)$/);
+    if(isDefineStatement) {
+      head.defines = {
+        ...(head.defines ?? {}),
+        [isDefineStatement[1]]: isDefineStatement[2].trimEnd()
+      };
+      rest.shift();
+      continue;
+    }
+
     // @ Page Title
     const isTitle = trimmed.match(/^@\s+/);
     if(isTitle) {
-      if(head.title) throw new Error('Page title cannot be set twice !');
+      if(head.title) throw new Error('Page title cannot be set more than once !');
       head.title = trimmed.substring(isTitle[0].length)
       rest.shift();
       continue;
