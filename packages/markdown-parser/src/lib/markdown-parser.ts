@@ -100,6 +100,12 @@ export function parseHead(inputLines: string[]): [ Head, string[] ] {
       continue;
     }
 
+    // BlankLine
+    if(trimmed === '') {
+      rest.shift();
+      continue;
+    }
+
     break;
   }
 

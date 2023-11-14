@@ -71,8 +71,22 @@ export class Builder {
     createFolder(this.project.resources, `${ distPath }/resources`, (f) => ({ name: `${ f.name }.${ f.extention }`, content: f.content }));
   }
 
-  public buildPage(page: Page): BuiltPage {
+  // props are properties that are accessible in integration blocks
+  public buildPage(page: Page, props?: Record<string, string>): BuiltPage {
     const builtPage: BuiltPage = { ...page, content: '' };
+
+    // If the page is using a template, we build that template as the page content
+    if(page.head.template) {
+      const template = find(this.project.templates, page.head.template);
+      
+      if(!template || template.type === 'folder') throw new Error(`Cannot find template ${page.head.template}`);
+      
+      const [ templateHead, templateDocument ] = parse(template.content.toString());
+
+      // We pass the defines that were put in the page as props to the build function.
+      builtPage.content += this.buildPage({ ...template, head: templateHead, document: templateDocument }, page.head.defines).content;
+      return builtPage;
+    }
   
     for(const line of page.document) {
       if(line.type === LineType.Header) {
@@ -99,7 +113,7 @@ export class Builder {
       }else if(line.type === LineType.CodeBlock) {
         builtPage.content += `<pre class="codeblock"><code class="lang-${ line.language }">${ line.lines.join('\n') }</code></pre>`;
       }else if(line.type === LineType.Integration) {
-        builtPage.content += run(this, page, line.code);
+        builtPage.content += run(this, page, line.code, props);
       }
     }
 
@@ -160,121 +174,5 @@ export class Builder {
 </html>
     `;
   }
-
-  /*public resolveImport(path: string): Component | false {
-    const sections = path.split('/');
-
-    // If the path is in the component cache return the cached version
-    if(this.componentCache[path]) return this.componentCache[path];
-
-    // Else figure out the file by looping over the path sections until we encounter a file or that we run out of sections
-    let projectFile: File | Folder<File> = this.project.components;
-    for(const section of sections) {
-      if(!projectFile) return false;
-      if(projectFile.type === 'file') break;
-      projectFile = projectFile.files[section];
-    }
-
-    // If the path leads to a folder or no file return an error
-    if(projectFile.type === 'folder' || !projectFile) return false;
-
-    // Builds the component and adds it to the component cache
-    const builtFile = this.buildFile(projectFile);
-    this.componentCache[path] = builtFile;
-    return builtFile;
-  }
-
-  public buildFolder(folder: Folder<File>): Folder<Page> {
-    const builtFolder: Folder<Page> = { type: 'folder', files: { } };
-  
-    // Maps every entry of the folder while also building files
-    for(const fileName in folder.files) {
-      const file = folder.files[fileName];
-      if(file.type === 'folder') {
-        builtFolder.files[fileName] = this.buildFolder(file);
-        continue;
-      }
-  
-      builtFolder.files[fileName] = this.buildFile(file);
-    }
-  
-    return builtFolder;
-  }
-  
-  public buildFile(file: File): Page {
-    const [ head, document ] = parse(file.content.toString());
-  
-    let fileOutput = '';
-  
-    for(const line of document) {
-      if(line.type === LineType.Header) {
-        fileOutput += `<h${ line.level } class="header h-${ line.level }">${ line.text }</h${ line.level }>\n`;
-      }else if(line.type === LineType.Paragraph) {
-        fileOutput += `<p class="paragraph">${ this.buildStrings(line.lines.join('\n')) }</p>\n`;
-      }else if(line.type === LineType.Separator) {
-        fileOutput += `<span class="separator"></span>\n`;
-      }else if(line.type === LineType.Import) {
-        const component = this.resolveImport(line.file);
-
-        if(!component) {
-          fileOutput += `<error>Cannot resolve import ${ line.file }</error>`;
-          continue;
-        }
-
-        fileOutput += this.wrapComponent(component);
-      }else if(line.type === LineType.UnorderedList) {
-        fileOutput += `<ul class="ul">${ line.lines.map((str) => `<li class="li">${ this.buildStrings(str) }</li>`).join('') }</ul>`;
-      }else if(line.type === LineType.OrderedList) {
-        fileOutput += `<ol class="ol">${ line.lines.map((str) => `<li class="li">${ this.buildStrings(str) }</li>`).join('') }</ol>`;
-      }else if(line.type === LineType.BlockQuotes) {
-        fileOutput += `<p class="block-quotes">${ this.buildStrings(line.lines.join('\n')) }</p>`;
-      }else if(line.type === LineType.CodeBlock) {
-        fileOutput += `<pre class="codeblock"><code class="lang-${ line.language }">${ line.lines.join('\n') }</code></pre>`;
-      }else if(line.type === LineType.Integration) {
-        fileOutput += run(this, file, head, line.code);
-      }
-    }
-  
-    return {
-      type: 'file',
-      name: file.name,
-      extention: 'html',
-      content: fileOutput,
-      head
-    };
-  }
-
-  // Returns the component html structure with it's content, style links and title as a class
-  public wrapComponent(component: Component): string {
-    return `<div class="component component-${ component.head.title ?? component.name }">
-      ${ (component.head.css ?? []).map((file) => `<link rel="stylesheet" href="/styles/${file}" />`).join('\n') }
-      ${ component.content }
-    </div>`;
-  }
-
-  // Returns a page html structure with it's title, prefix, suffix, style links and content
-  public wrapHtml(head: Head, content: string): string {
-    const prefix = this.project.config.build?.components?.prefix ? this.resolveImport(this.project.config.build.components.prefix) : false;
-    const suffix = this.project.config.build?.components?.suffix ? this.resolveImport(this.project.config.build.components.suffix) : false;
-
-    return `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${ (this.project.config.site?.title ?? '%page_name%').replace(/%page_name%/gm, head.title ?? '') }</title>
-  ${ this.project.config.site?.favicon ? `<link rel="icon" type="image/x-icon" href="${ this.project.config.site.favicon }">` : '' }
-  <link rel="stylesheet" href="/styles/index.css" />
-  ${ (head.css ?? []).map((file) => `<link rel="stylesheet" href="/styles/${ file }" />`).join('\n') }
-</head>
-<body>
-  ${ prefix ? this.wrapComponent(prefix) : '' }
-  ${ content }
-  ${ suffix ? this.wrapComponent(suffix) : '' }
-</body>
-</html>
-    `;
-  }*/
 
 }

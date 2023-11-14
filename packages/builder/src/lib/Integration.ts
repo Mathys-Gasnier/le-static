@@ -2,7 +2,7 @@ import { find } from './FileUtils';
 import { Builder, Page } from './builder';
 import { createContext, runInContext } from 'vm';
 
-export function run(builder: Builder, page: Page, code: string): unknown {
+export function run(builder: Builder, page: Page, code: string, props?: Record<string, string>): unknown {
     const context = {
       Page: {
         title: page.head.title ?? page.name
@@ -11,7 +11,8 @@ export function run(builder: Builder, page: Page, code: string): unknown {
         const folder = find(builder.pages, path);
         if(!folder || folder.type === 'file') return [ ];
         return folder;
-      }
+      },
+      ...(props ?? { })
     };
     createContext(context);
 
