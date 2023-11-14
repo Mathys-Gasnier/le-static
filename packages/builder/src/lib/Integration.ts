@@ -7,12 +7,13 @@ export function run(builder: Builder, page: Page, code: string, props?: Record<s
       Page: {
         title: page.head.title ?? page.name
       },
+      ...(page.head.defines ?? { }),
+      ...(props ?? { }),
       getFolder(path: string) {
         const folder = find(builder.pages, path);
         if(!folder || folder.type === 'file') return [ ];
         return folder;
-      },
-      ...(props ?? { })
+      }
     };
     createContext(context);
 

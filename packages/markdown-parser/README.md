@@ -6,7 +6,11 @@ Parse a markdown string and outputs an AST.
 
 The AST contains:
 
-The Head, it contains an optional page title and an optional css array that contains a list of used css files.
+The Head, it can contains:
+- the page title
+- the css files that are @use-d in the page
+- the template if any
+- and the defined key value pairs
 
 The Document is a list of lines:
 - `Paragraph` - One or more grouped lines
